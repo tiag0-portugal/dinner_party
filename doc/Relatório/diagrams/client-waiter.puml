@@ -1,0 +1,189 @@
+@startuml client-waiter
+
+!theme plain
+
+participant "Client/s" as ct
+participant "first:Client" as f
+participant "last:Client" as l
+participant Waiter as w
+participant Chef as cf
+
+note over ct, cf
+Initial states:
+
+state client/s: init
+state waiter: wait_for_request
+state chef: wait_for_order
+
+end note
+
+note over ct, l
+Clients :
+travel( rand )
+state : wait_for_friends
+tableClients +=  1
+
+Clients \ Client id = last :
+semDown( friendsArrived )
+end note
+
+[--> ct : arrived( )
+activate ct
+activate f
+activate l
+
+deactivate ct
+deactivate f
+
+
+
+loop TABLESIZE times
+note over l
+Client id = last :
+semUp(friendsArrived)
+end note
+l->ct :  semUp( friendsArrived )
+
+activate f
+activate ct
+
+
+end
+
+note over ct, l
+Clients :
+state: wait_for_food
+
+Clients \ Client id = first :
+semDown( foodArrived )
+end note
+
+deactivate ct
+deactivate l
+
+note over f
+Client id = first :
+
+state: food_request
+foodRequest = 1
+semUp( waiterRequest )
+semDown( requestReceived )
+end note
+
+f -> w ++ : semUp( waiterRequest )
+deactivate f
+
+note over w
+Waiter :
+state : inform_chef
+semUp( waitOrder )
+semUp( requestReceived )
+semDown( waiterRequest )
+end note
+
+
+note over f
+Client id = first :
+semDown( foodArrived )
+end note
+
+
+w -> f ++ : semUp( requestReceived )
+deactivate f
+
+note over cf
+Chef :
+foodOrder = 1;
+state : cook
+cook( rand )
+end note
+
+w -> cf ++ : semUp( waitOrder )
+deactivate cf
+deactivate w
+
+
+cf <--] ++ : done()
+note over cf
+Chef :
+foodReady = 1;
+state : rest
+semUp( waiterRequest )
+end note
+
+cf -> w ++ : semUp( waiterRequest )
+deactivate cf
+
+note over w
+state : take_to_table
+end note
+
+loop TABLESIZE times
+note over w
+Waiter :
+semUp(foodArrived)
+end note
+w->ct ++ :   semUp( foodArrived )
+activate f
+activate l
+end
+
+note over w
+Waiter :
+semDown( waiterRequest )
+end note
+
+deactivate w
+
+note over ct, l
+Clients :
+state: eat
+tableFinishEat += 1
+
+Clients \ Client id = last :
+semDown( allFinished )
+end note
+
+deactivate ct
+deactivate f
+
+loop TABLESIZE times
+note over l
+Client id = last :
+semUp(All)
+end note
+l->ct ++ : semUp(friendsArrived)
+activate f
+end
+
+note over ct, l
+Clients \ Client id = last:
+state: finished
+
+Client id = last :
+paymentRequest = 1
+semUp( waiterRequest )
+semDown( requestReceived )
+end note
+
+deactivate ct
+deactivate f
+
+l -> w ++ : semUp( waiterRequest )
+deactivate l
+
+note over w
+Waiter :
+state : receive_payment
+semUp( requestReceived )
+end note
+
+w -> l ++ : semUp( requestReceived )
+deactivate w
+
+note over l
+Client id = last :
+state : finished
+end note
+
+@enduml

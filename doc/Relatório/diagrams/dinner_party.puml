@@ -1,4 +1,4 @@
-@startuml client-waiter
+@startuml dinner_party
 
 !theme plain
 
@@ -51,10 +51,8 @@ activate ct
 end
 
 note over ct, l
-Clients :
-state: wait_for_food
-
 Clients \ Client id = first :
+state: wait_for_food
 semDown( foodArrived )
 end note
 
@@ -84,6 +82,7 @@ end note
 
 note over f
 Client id = first :
+state: wait_for_food
 semDown( foodArrived )
 end note
 
@@ -138,6 +137,7 @@ deactivate w
 note over ct, l
 Clients :
 state: eat
+eat( rand )
 tableFinishEat += 1
 
 Clients \ Client id = last :
@@ -146,14 +146,16 @@ end note
 
 deactivate ct
 deactivate f
+deactivate l
 
-loop TABLESIZE times
-note over l
-Client id = last :
-semUp(All)
+loop TABLESIZE times 
+note over ct, l
+Client id = last_to_eat :
+semUp( friendsArrived )
 end note
-l->ct ++ : semUp(friendsArrived)
+ct->ct ++ : semUp( friendsArrived )
 activate f
+activate l
 end
 
 note over ct, l

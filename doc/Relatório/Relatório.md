@@ -3,6 +3,7 @@ title: "Jantar de amigos"
 description: "Trabalho na vertente de sincronização de processos"
 author: 
   - Tiago Portugal nmec 103931
+  - Mauro Gomes nmec 108899
 date: today
 lang: pt-PT
 
@@ -250,22 +251,12 @@ Neste caso, a flag estabelecida no ponto anterior é a foodRequest, pelo que a r
 ...
 ```
 
-
-
-
-
-
-
 :::{ .callout-note }
 
 # nota
 
 Estando identificada a flag associada ao pedido, a mesma é desactivada para não interferir na identificação de outros pedidos.
 :::
-
-
-
-
 
 Defenida a sua responsabilidade o empregado, muda o seu estado para `inform_chef` e sinaliza o chefe , executando `semUp( waitOrder )`.
 
@@ -447,26 +438,12 @@ sh->fSt.st.clientStat[id] = FINISHED;
 
  Todas as relações e fluxos estão aqui representadas neste diagrama.
 
-![](img/client-waiter.png)
+![](img/dinner_party.png){fig-align="center"}
 
 # Conclusão
 
 Em suma, com este trabalho fiquei com uma melhor prepétiva de o quão vital é conceito de sincronização de processos no acesso de recursos partilhados, e dos mecanismos de linux e unix em geral que permitem esta mesma sincronização.
 
+# Outros
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+> [Repositório](https://github.com/tiag0-portugal/dinner_party)

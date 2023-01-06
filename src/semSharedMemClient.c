@@ -171,20 +171,19 @@ static bool waitFriends(int id)
         sh->fSt.st.clientStat[id] = WAIT_FOR_FRIENDS;
         
         // Get the first client id (he will ask for the the food)
-        if (sh->fSt.tableClients == 1) {
-        sh->fSt.tableFirst = id;
-        first = true;
+        if (sh->fSt.tableClients == 1){
+            sh->fSt.tableFirst = id;
+            first = true;
         }
 
-        
+        // Last Cliente to arrive releases all the table
         if (sh->fSt.tableClients == TABLESIZE) {
 
             for (int i = 0; i < TABLESIZE; i++) {
+                // This semup is inside the critical region, because that way we are certain that while we increment the semaphor no one decrements it.
                 semUp(semgid,sh->friendsArrived);
             }
 
-            // The output of the binaries tell us that the last client is updated here idk why
-            sh->fSt.st.clientStat[id] = WAIT_FOR_FOOD; 
             // Get the last client who will pay the bill
             sh->fSt.tableLast = id;
 
@@ -217,21 +216,27 @@ static bool waitFriends(int id)
  *
  *  \param id client id
  */
+
+
+// This function is meant to be executed by the first client to arrive to the table
 static void orderFood (int id)
 {
-    // This function will only run on the first client process to arrive at the table
     if (semDown (semgid, sh->mutex) == -1) {                                                  /* enter critical region */
         perror ("error on the down operation for semaphore access (CT)");
         exit (EXIT_FAILURE);
     }
 
-        sh->fSt.foodRequest = 1; // Update the fooded request (needed to the waiter, so he knows what service to do)
-        semUp(semgid,sh->waiterRequest); // call Waiter
+        sh->fSt.foodRequest = 1; // Update the fooded request (needed by the waiter to determine what service to do)
         sh->fSt.st.clientStat[id] = FOOD_REQUEST;
-
         saveState(nFic,&sh->fSt);
     
     if (semUp (semgid, sh->mutex) == -1)                                                      /* exit critical region */
+    { perror ("error on the up operation for semaphore access (CT)");
+        exit (EXIT_FAILURE);
+    }
+
+    //Signal Waiter
+    if (semUp(semgid,sh->waiterRequest) == -1)                                                      /* exit critical region */
     { perror ("error on the up operation for semaphore access (CT)");
         exit (EXIT_FAILURE);
     }
@@ -316,20 +321,20 @@ static void waitAndPay (int id){
         // Update the number of people who have already eaten
         sh->fSt.tableFinishEat += 1;
 
+        // Update state
+        sh->fSt.st.clientStat[id] = WAIT_FOR_OTHERS;
+        saveState(nFic,&sh->fSt);
+
         if (sh->fSt.tableFinishEat == TABLESIZE) {
+            // This semup is inside the critical region, because that way we are certain that while we increment the semaphor no one decrements it.
             for (int i = 0; i < TABLESIZE; i++ ) {
                 semUp(semgid,sh->allFinished);
             }
         }
 
-        // Update state
-        sh->fSt.st.clientStat[id] = WAIT_FOR_OTHERS;
-        saveState(nFic,&sh->fSt);
-
-
         if (sh->fSt.tableLast == id){
-        last = true;
-    }
+            last = true;
+        }
 
         
 
@@ -350,10 +355,13 @@ static void waitAndPay (int id){
            perror ("error on the down operation for semaphore access (CT)");
            exit (EXIT_FAILURE);
         }
-
+            // Update last client state
             sh->fSt.st.clientStat[id] = WAIT_FOR_BILL;
-            sh->fSt.paymentRequest = 1; // Payment flag for the waiter to use
+            // Payment flag for the waiter to use
+            sh->fSt.paymentRequest = 1;
+            saveState(nFic,&sh->fSt);
 
+            // Signal Waiter
             if (semUp (semgid, sh->waiterRequest) == -1) {                                                  /* enter critical region */
                 perror ("error on the down operation for semaphore access (CT)");
                 exit (EXIT_FAILURE);
@@ -378,8 +386,8 @@ static void waitAndPay (int id){
         exit (EXIT_FAILURE);
     }
 
-        /* insert your code here */
-        sh->fSt.st.clientStat[id] = 8; // Routine finished
+        // Update Client to it's final state
+        sh->fSt.st.clientStat[id] = FINISHED;
         saveState(nFic,&sh->fSt);
 
     if (semUp (semgid, sh->mutex) == -1) {                                                  /* enter critical region */

@@ -112,12 +112,12 @@ int main (int argc, char *argv[])
 
         /*
 
-        To find `req` we need the flags
+        To find what kind of request the waiter needs to do, we use the following flags
 
         - foodRequest
         - foodReady
         - paymentRequest
-        
+
         */ 
 
         req = waitForClientOrChef();
@@ -170,7 +170,7 @@ static int waitForClientOrChef()
         exit (EXIT_FAILURE);
     }
 
-    // Wait until request (any request)
+    // Wait until request, any request
     if (semDown(semgid,sh->waiterRequest) == -1) {
         perror("error on the down operation for semaphore access (WT)");              
         exit(1);
@@ -182,20 +182,21 @@ static int waitForClientOrChef()
     }
 
         // if(flag); deactivate flag
-
         if(sh->fSt.foodRequest == 1){
             sh->fSt.foodRequest = 0;
-            ret = 1;
+            ret = FOODREQ;
         }
 
+        // if(flag); deactivate flag
         if(sh->fSt.foodReady == 1){
             sh->fSt.foodReady = 0;
-            ret = 2;
+            ret = FOODREADY;
         }
 
+        // if(flag); deactivate flag
         if(sh->fSt.paymentRequest == 1){
             sh->fSt.paymentRequest = 0;
-            ret = 3;
+            ret = BILL;
         }
 
     if (semUp (semgid, sh->mutex) == -1) {                                                  /* exit critical region */
@@ -214,6 +215,9 @@ static int waitForClientOrChef()
  *  The internal state should be saved.
  *
  */
+
+
+// ret = FOODREQ
 static void informChef ()
 {
     if (semDown (semgid, sh->mutex) == -1)  {                                                  /* enter critical region */
@@ -221,6 +225,7 @@ static void informChef ()
         exit (EXIT_FAILURE);
     }
 
+      // Update state
       sh->fSt.st.waiterStat = INFORM_CHEF;
       saveState(nFic,&sh->fSt);
 
@@ -260,7 +265,7 @@ static void takeFoodToTable ()
         sh->fSt.st.waiterStat = TAKE_TO_TABLE;
         saveState(nFic,&sh->fSt);
 
-        // This semup is inside the critical region, because that way we certain that while we increment the semaphor no one decrements it.
+        // This semup is inside the critical region, because that way we are certain that while we increment the semaphor no one decrements it.
         for (int i = 0; i < TABLESIZE; i++) {
             if (semUp(semgid,sh->foodArrived) == -1) {
                 perror("error on the down operation for semaphore access (WT)");               
@@ -287,7 +292,8 @@ static void receivePayment ()
         perror ("error on the up operation for semaphore access (WT)");
         exit (EXIT_FAILURE);
     }
-        sh->fSt.st.waiterStat = 3;
+        // Update waiter to it's final state
+        sh->fSt.st.waiterStat = RECEIVE_PAYMENT;
         saveState(nFic,&sh->fSt);
 
     if (semUp (semgid, sh->mutex) == -1)  {                                                  /* exit critical region */
@@ -295,6 +301,7 @@ static void receivePayment ()
         exit (EXIT_FAILURE);
     }
 
+    // Signal client
     if (semUp(semgid,sh->requestReceived) == -1) {
         perror("error on the down operation for semaphore access (WT)");             
         exit(1);

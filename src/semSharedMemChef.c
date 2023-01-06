@@ -128,8 +128,9 @@ static void waitForOrder ()
         perror ("error on the up operation for semaphore access (PT)");
         exit (EXIT_FAILURE);
     }
-
+        // foodOrder is not a flag just an indication that the order is being procceced
         sh->fSt.foodOrder = 1;
+        // Update state
         sh->fSt.st.chefStat = COOK;
         saveState(nFic,&sh->fSt);
 
@@ -153,8 +154,12 @@ static void processOrder ()
         perror ("error on the up operation for semaphore access (PT)");
         exit (EXIT_FAILURE);
     }
+        // Order done
+        sh->fSt.foodOrder = 0;
+
         // Food is ready flag for waiter
         sh->fSt.foodReady = 1;
+        
         // Update chef state
         sh->fSt.st.chefStat = REST;
         saveState(nFic,&sh->fSt);
